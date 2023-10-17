@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.config.AppConfig;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -8,7 +10,9 @@ import java.nio.file.*;
 public class FileDownloader {
     public static void main(String[] args) throws IOException {
         String fileUrl = "https://nodejs.org/dist/v16.13.1/node-v16.13.1-x64.msi"; // Replace with the URL of the file you want to download
-        String destinationPath = "D:\\University\\ThreeYear\\semester5\\PBL4\\Downloads\\node-v16.13.1-x64.msi"; // Replace with the local file path where you want to save the downloaded file
+        String DOWNLOAD_PATH = "D:\\University\\ThreeYear\\semester5\\PBL4\\Downloads";
+        String filename = fileUrl.substring(fileUrl.lastIndexOf("/")+1);
+        String destinationPath = DOWNLOAD_PATH + File.separator + filename; // Replace with the local file path where you want to save the downloaded file
         int numThreads = 8; // Number of threads to use for downloading
 
         Path tempDir = Files.createTempDirectory("mytempdir_");
@@ -54,6 +58,14 @@ public class FileDownloader {
             // Merge downloaded parts into the final file
             Path finalPath = Paths.get(destinationPath);
             Files.createDirectories(finalPath.getParent());
+            File dir = new File(finalPath.getParent().toString());
+            System.out.println(filename);
+            for(String arr : dir.list()) {
+                if(arr.compareTo(filename) == 0) {
+                    new File(destinationPath).delete();
+                }
+            }
+
             try (OutputStream outputStream = Files.newOutputStream(finalPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
                 for (int i = 0; i < numThreads; i++) {
                     Path tempFile = tempDir.resolve("part-" + i + ".tmp");

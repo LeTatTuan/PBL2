@@ -29,9 +29,8 @@ public class DownloadManager {
         System.out.println("check path: " + path);
         FileInfo file = new FileInfo(Integer.toString(index + 1), filename, url,status, action, path);
         this.index = this.index+1;
-        DownloadThread thread = new DownloadThread(file, this);
         this.tableView.getItems().add(Integer.parseInt(file.getIndex()) - 1,file);
-        thread.start();
+        DownloadExcute downloadExcute = new DownloadExcute(file, this);
         this.urlTextField.setText("");
     }
 
