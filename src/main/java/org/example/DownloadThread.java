@@ -3,33 +3,38 @@ package org.example;
 import org.example.models.FileInfo;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 public class DownloadThread extends  Thread {
-    private FileInfo file;
-    DownloadManager manager;
-
-    public DownloadThread(FileInfo file, DownloadManager manager) {
-        this.file = file;
-        this.manager = manager;
+    private String fileUrl;
+    private long startByte;
+    private long endByte;
+    private Path tempDownloadingFile;
+    public DownloadThread(String fileUrl, long startByte, long endByte, Path tempDownloadingFile) {
+        this.fileUrl = fileUrl;
+        this.startByte = startByte;
+        this.endByte = endByte;
+        this.tempDownloadingFile = tempDownloadingFile;
     }
 
     @Override
     public void run() {
-        this.file.setStatus("DOWNLOADING");
-        this.manager.updateUI(this.file);
-        //download logic
         try {
-            Files.copy((new URL(this.file.getUrl()).openStream()),Paths.get(this.file.getPath()), StandardCopyOption.REPLACE_EXISTING);
-            this.file.setStatus("DONE");
+            URL partialUrl = new URL(fileUrl);
+            HttpURLConnection connection = (HttpURLConnection) partialUrl.openConnection();
+            connection.setRequestProperty("Range", "bytes=" + startByte + "-" + endByte);
+
+            try(InputStream in = connection.getInputStream()) {
+                Files.copy(in,tempDownloadingFile, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
-            this.file.setStatus("FAILED");
-            System.out.println("Downloading error!!!");
             e.printStackTrace();
         }
-        this.manager.updateUI(this.file);
     }
 }
