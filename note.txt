@@ -8,6 +8,5 @@ https://www.python.org/ftp/python/3.11.6/python-3.11.6-embed-amd64.zip
 https://download-cdn.jetbrains.com/python/pycharm-community-2023.2.2.exe
 https://nodejs.org/dist/v18.18.0/node-v18.18.0-x64.msi
 
-D:\University\ThreeYear\semester5\PBL4\Downloads
 
-C:\Users\ASUS\AppData\Local\Temp\mytempdir_7141087136047787208
+

@@ -1,8 +1,9 @@
 package org.example;
 
-import javafx.beans.property.SimpleStringProperty;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -10,43 +11,59 @@ import org.example.config.AppConfig;
 import org.example.models.FileInfo;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 
 
+@SuppressWarnings("ALL")
 public class DownloadManager {
 
     @FXML
     private TextField urlTextField;
     @FXML
     private TableView<FileInfo> tableView;
+    @FXML
+    private ProgressBar progressBar0;
+    @FXML
+    private ProgressBar progressBar1;
+    @FXML
+    private ProgressBar progressBar2;
+    @FXML
+    private ProgressBar progressBar3;
+    @FXML
+    private ProgressBar progressBar4;
+    @FXML
+    private ProgressBar progressBar5;
+    @FXML
+    private ProgressBar progressBar6;
+    @FXML
+    private ProgressBar progressBar7;
     public int index = 0;
 
     List<DownloadThread> threads = new ArrayList<DownloadThread>();
+
     @FXML
     void downloadButtonClicked(ActionEvent event) {
 
         String url = this.urlTextField.getText().trim();
         String filename = url.substring(url.lastIndexOf("/")+1);
-        String status = "STARTING";
+        String status = "DOWNLOADING";
         String action = "OPEN";
         String path = AppConfig.DOWNLOAD_PATH + File.separator + filename;
         FileInfo file = new FileInfo(Integer.toString(index + 1), filename, url,status, action, path);
         this.index = this.index+1;
         this.tableView.getItems().add(Integer.parseInt(file.getIndex()) - 1,file);
-        this.updateUI(file);
-        try {
-            startDownload(file);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+        new Thread(() -> {
+            try {
+                startDownload(file);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
         this.urlTextField.setText("");
-        this.updateUI(file);
     }
     public void startDownload(FileInfo file) {
         try {
@@ -67,20 +84,44 @@ public class DownloadManager {
                     threads.add(new DownloadThread(fileUrl, startByte, endByte, tempDownloadingFile));
                 }
 
-                for( DownloadThread thread : threads ) {
-                    thread.start();
+                for( DownloadThread thread : threads) {
+                    thread.setOnProgressChanged(event -> {
+                        int threadIndex = threads.indexOf(thread);
+                        if (threadIndex >= 0) {
+                            double progress = thread.setOnProgressChanged;
+                            Platform.runLater(() -> updateProgressBar(threadIndex, progress));
+                        }
+                    });
+
+                    if (thread.getState() == Thread.State.NEW) {
+                        thread.start();
+                    }
                 }
 
-                for(DownloadThread thread : threads) {
-                    thread.join();
-                }
-                Path finalPath = Paths.get(destinationPath);
-                Files.createDirectories(finalPath.getParent());
-                File dir = new File(finalPath.getParent().toString());
-                for(String arr : dir.list()) {
-                    if(arr.compareTo(filename) == 0) {
-                        new File(destinationPath).delete();
+                for (DownloadThread thread : threads) {
+                    try {
+                        thread.join();
+                    } catch (InterruptedException e) {
+                        e.getStackTrace();
                     }
+                }
+
+//                Kiểm tra file đc tải đã tồn tại chưa
+//                        nếu đã tồn tại thì thêm (1), (2),... vào sau tên file
+                int duplicateCounter = 1;
+                Path finalPath = Paths.get(destinationPath);
+                while (Files.exists(finalPath)) {
+                    String newFilename = filename;
+                    int dotIndex = filename.lastIndexOf(".");
+                    if (dotIndex != -1) {
+                        String baseName = filename.substring(0, dotIndex);
+                        String extension = filename.substring(dotIndex);
+                        newFilename = baseName + "(" + duplicateCounter + ")" + extension;
+                    } else {
+                        newFilename = filename + "(" + duplicateCounter + ")";
+                    }
+                    finalPath = Paths.get(finalPath.getParent().toString(), newFilename);
+                    duplicateCounter++;
                 }
 
                 try(OutputStream out = Files.newOutputStream(finalPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
@@ -93,23 +134,37 @@ public class DownloadManager {
                 Files.delete(tempDir);
                 file.setStatus("DONE");
                 System.out.println("File downloaded successfully.");
+                threads.clear();
             } catch (IOException e) {
-                System.err.println("Error downloading file: " + e);
+                System.err.println("Error downloading file: " + e.getMessage());
                 Files.delete(tempDir);
+                e.printStackTrace();
             }
         } catch (Exception e) {
             System.err.println("Error downloading file: " + e.getMessage());
             file.setStatus("FAILED");
+            e.printStackTrace();
         }
     }
 
+    private void updateProgressBar(int threadIndex, double progress) {
+        switch (threadIndex) {
+            case 0:
+                progressBar0.setProgress(progress);
+                break;
+            case 1:
+                progressBar1.setProgress(progress);
+                break;
+            // Cập nhật các ProgressBar khác tương tự
+        }
+    }
+
+
+
     public void updateUI(FileInfo metaFile) {
-        System.out.println(metaFile);
         FileInfo fileInfo =  this.tableView.getItems().get(Integer.parseInt(metaFile.getIndex()) - 1);
-        System.out.println(fileInfo);
         fileInfo.setStatus(metaFile.getStatus());
         this.tableView.refresh();
-        System.out.println("---------------");
     }
 
     @FXML

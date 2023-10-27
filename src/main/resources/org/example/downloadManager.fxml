@@ -31,14 +31,14 @@
                   </TextField>
                   <HBox prefHeight="30.0" prefWidth="683.0">
                      <children>
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
-                        <ProgressBar prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar0" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar1" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar2" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar3" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar4" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar5" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar6" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
+                        <ProgressBar fx:id="progressBar7" prefHeight="18.0" prefWidth="90.0" progress="0.0" />
                      </children>
                   </HBox>
                   <Button mnemonicParsing="false" onAction="#downloadButtonClicked" text="Start Download" textFill="#e41010" />
