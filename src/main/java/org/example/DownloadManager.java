@@ -1,9 +1,7 @@
 package org.example;
 
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -26,21 +24,6 @@ public class DownloadManager {
     @FXML
     private TableView<FileInfo> tableView;
     @FXML
-    private ProgressBar progressBar0;
-    @FXML
-    private ProgressBar progressBar1;
-    @FXML
-    private ProgressBar progressBar2;
-    @FXML
-    private ProgressBar progressBar3;
-    @FXML
-    private ProgressBar progressBar4;
-    @FXML
-    private ProgressBar progressBar5;
-    @FXML
-    private ProgressBar progressBar6;
-    @FXML
-    private ProgressBar progressBar7;
     public int index = 0;
 
     List<DownloadThread> threads = new ArrayList<DownloadThread>();
@@ -85,14 +68,6 @@ public class DownloadManager {
                 }
 
                 for( DownloadThread thread : threads) {
-                    thread.setOnProgressChanged(event -> {
-                        int threadIndex = threads.indexOf(thread);
-                        if (threadIndex >= 0) {
-                            double progress = thread.setOnProgressChanged;
-                            Platform.runLater(() -> updateProgressBar(threadIndex, progress));
-                        }
-                    });
-
                     if (thread.getState() == Thread.State.NEW) {
                         thread.start();
                     }
@@ -146,20 +121,6 @@ public class DownloadManager {
             e.printStackTrace();
         }
     }
-
-    private void updateProgressBar(int threadIndex, double progress) {
-        switch (threadIndex) {
-            case 0:
-                progressBar0.setProgress(progress);
-                break;
-            case 1:
-                progressBar1.setProgress(progress);
-                break;
-            // Cập nhật các ProgressBar khác tương tự
-        }
-    }
-
-
 
     public void updateUI(FileInfo metaFile) {
         FileInfo fileInfo =  this.tableView.getItems().get(Integer.parseInt(metaFile.getIndex()) - 1);
