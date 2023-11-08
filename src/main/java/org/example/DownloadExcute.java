@@ -5,14 +5,13 @@ import javafx.concurrent.Task;
 import javafx.scene.control.ProgressBar;
 import org.example.models.FileInfo;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DownloadExcute {
     private FileInfo file;
@@ -30,51 +29,49 @@ public class DownloadExcute {
             String fileUrl = this.file.getUrl();
             String filename = this.file.getName();
             String destinationPath = this.file.getPath();
+
+            Path finalPath = Paths.get(destinationPath);
+            Files.createDirectories(finalPath.getParent());
+            File dir = new File(finalPath.getParent().toString());
+            for(String arr : dir.list()) {
+                if(arr.compareTo(filename) == 0) {
+                    new File(destinationPath).delete();
+                }
+            }
+
             int numThreads = 8;
-            Path tempDir = Files.createTempDirectory("Downloading_");
             try {
                 URL url = new URL(fileUrl);
                 long contentLength = url.openConnection().getContentLength();
-
-                long chunkSize = contentLength / numThreads;
+                if(contentLength > 200*1024*1024) {
+                    numThreads = 8;
+                }
+                if (contentLength <= 0) {
+                    System.out.println("Khong the xac dinh kich thuoc tep tin.");
+                    return;
+                }
+                //ExecutorService executor = Executors.newFixedThreadPool(numThreads);
                 Thread[] threads = new Thread[numThreads];
+                long chunkSize = contentLength / numThreads;
                 for (int i = 0; i < numThreads; i++) {
                     long startByte = i * chunkSize;
                     long endByte = (i == numThreads - 1) ? contentLength - 1 : startByte + chunkSize - 1;
-                    Path tempDownloadingFile = tempDir.resolve("part-" + i + ".tmp");
-                    DownloadTask downloadTask = new DownloadTask(fileUrl, tempDownloadingFile, startByte, endByte);
-                    progressBarList.get(i).progressProperty().bind(downloadTask.progressProperty());
-                    threads[i] = new Thread(downloadTask);
-                    System.out.println(threads[i].getPriority());
+                    threads[i] = new Thread(new DownloadTask(fileUrl, startByte, endByte, destinationPath, progressBarList.get(i)));
                     threads[i].start();
                 }
+
                 for(Thread thread : threads) {
                     thread.join();
                 }
 
-                Path finalPath = Paths.get(destinationPath);
-                Files.createDirectories(finalPath.getParent());
-                File dir = new File(finalPath.getParent().toString());
-                for(String arr : dir.list()) {
-                    if(arr.compareTo(filename) == 0) {
-                        new File(destinationPath).delete();
-                    }
-                }
-
-                try(OutputStream out = Files.newOutputStream(finalPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-                    for(int i = 0; i < numThreads; i++) {
-                        Path tempFile = tempDir.resolve("part-" + i + ".tmp");
-                        Files.copy(tempFile, out);
-                        Files.delete(tempFile);
-                    }
-                }
-                Files.delete(tempDir);
                 this.file.setStatus("DONE");
                 System.out.println("File downloaded successfully.");
-            } catch (IOException | InterruptedException e) {
+                for(ProgressBar progressBar : progressBarList) {
+                    progressBar.setProgress(0.0);
+                }
+            } catch (IOException e) {
                 this.file.setStatus("FAILED");
                 System.err.println("Error downloading file: " + e.getMessage());
-                Files.delete(tempDir);
             }
         } catch (Exception e) {
             this.file.setStatus("FAILED");
@@ -83,33 +80,46 @@ public class DownloadExcute {
     }
 }
 
-class DownloadTask extends Task<Void> {
+class DownloadTask implements Runnable {
     private final String fileUrl;
-    private final Path tempDownloadingFile;
     private final long startByte;
     private  final long endByte;
+    private final  String tempDownloadingFile;
+    private  final  ProgressBar progressBar;
 
-    public DownloadTask(String fileUrl, Path tempDownloadingFile, long startByte, long endByte) {
+    public DownloadTask(String fileUrl, long startByte, long endByte, String tempDownloadingFile, ProgressBar progressBar) {
         this.fileUrl = fileUrl;
-        this.tempDownloadingFile = tempDownloadingFile;
         this.startByte = startByte;
         this.endByte = endByte;
+        this.tempDownloadingFile = tempDownloadingFile;
+        this.progressBar = progressBar;
     }
 
     @Override
-    protected Void call() {
+    public void run() {
         try {
             URL partialUrl = new URL(fileUrl);
             HttpURLConnection connection = (HttpURLConnection) partialUrl.openConnection();
             connection.setRequestProperty("Range", "bytes=" + startByte + "-" + endByte);
-
-            try(InputStream in = connection.getInputStream()) {
-                Files.copy(in,tempDownloadingFile, StandardCopyOption.REPLACE_EXISTING);
+            BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+            RandomAccessFile out = new RandomAccessFile(tempDownloadingFile, "rw");
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            long totalBytesRead = 0;
+            long totalBytes = endByte - startByte + 1;
+            out.seek(startByte);
+            System.out.println("Range bytes = " + startByte + " - " + endByte);
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                int progress = (int)(totalBytesRead * 100.0/totalBytes);
+                progressBar.setProgress(progress);
             }
-            updateProgress(1, 1);
+            in.close();
+            out.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
     }
 }
+
