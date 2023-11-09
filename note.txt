@@ -8,7 +8,6 @@ https://www.python.org/ftp/python/3.11.6/python-3.11.6-embed-amd64.zip
 https://download-cdn.jetbrains.com/python/pycharm-community-2023.2.2.exe
 https://nodejs.org/dist/v18.18.0/node-v18.18.0-x64.msi
 https://download-cdn.jetbrains.com/rider/JetBrains.Rider-2023.2.3.exe
-https://download.microsoft.com/download/6/2/A/62A76ABB-9990-4EFC-A4FE-C7D698DAEB96/9600.17050.WINBLUE_REFRESH.140317-1640_X64FRE_SERVER_EVAL_EN-US-IR3_SSS_X64FREE_EN-US_DV9.ISO
 
 D:\University\ThreeYear\semester5\PBL4\Downloads
 

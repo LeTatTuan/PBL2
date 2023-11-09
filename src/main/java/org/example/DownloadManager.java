@@ -64,7 +64,7 @@ public class DownloadManager {
         this.tableView.getItems().add(Integer.parseInt(file.getIndex()) - 1, file);
         Thread dowloadThread = new Thread(() -> {
             try {
-                DownloadExcute downloadExcute = new DownloadExcute(file, this, this.progressBarList);
+                new DownloadExcute(file, this.progressBarList);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -91,11 +91,14 @@ public class DownloadManager {
         progressBarList.add(progressBar6);
         progressBarList.add(progressBar7);
         progressBarList.add(progressBar8);
+
         for(ProgressBar pg : progressBarList) {
             pg = new ProgressBar();
             pg.setProgress(0.0);
         }
+
         System.out.println("View initialized");
+
         //set column N.SO
         TableColumn<FileInfo, String> sn = (TableColumn<FileInfo, String>) this.tableView.getColumns().get(0);
         sn.setCellValueFactory(p -> {
