@@ -1,35 +1,56 @@
 package org.example;
-
-import org.example.models.FileInfo;
-
+import javafx.application.Platform;
+import javafx.scene.control.ProgressBar;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.Path;
 
-public class DownloadThread extends  Thread {
-    private FileInfo file;
-    DownloadManager manager;
-
-    public DownloadThread(FileInfo file, DownloadManager manager) {
-        this.file = file;
-        this.manager = manager;
+public class DownloadThread implements Runnable {
+    private String fileUrl;
+    private long startByte;
+    private long endByte;
+    private Path tempDownloadingFile;
+    private ProgressBar progressBar;
+    public DownloadThread(String fileUrl, long startByte, long endByte, Path tempDownloadingFile, ProgressBar progressBar) {
+        this.fileUrl = fileUrl;
+        this.startByte = startByte;
+        this.endByte = endByte;
+        this.tempDownloadingFile = tempDownloadingFile;
+        this.progressBar = progressBar;
     }
 
     @Override
     public void run() {
-        this.file.setStatus("DOWNLOADING");
-        this.manager.updateUI(this.file);
-        //download logic
         try {
-            Files.copy((new URL(this.file.getUrl()).openStream()),Paths.get(this.file.getPath()), StandardCopyOption.REPLACE_EXISTING);
-            this.file.setStatus("DONE");
+            URL partialUrl = new URL(fileUrl);
+            HttpURLConnection connection = (HttpURLConnection) partialUrl.openConnection();
+            connection.setRequestProperty("Range", "bytes=" + startByte + "-" + endByte);
+            BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+            RandomAccessFile out = new RandomAccessFile(tempDownloadingFile.toFile().getPath(), "rw");
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            long totalBytesRead = 0;
+            long totalBytesOneChunk = endByte - startByte + 1;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                updateProgress(totalBytesRead, totalBytesOneChunk);
+            }
+            updateProgress(1,1);
+            in.close();
+            out.close();
         } catch (IOException e) {
-            this.file.setStatus("FAILED");
-            System.out.println("Downloading error!!!");
             e.printStackTrace();
         }
-        this.manager.updateUI(this.file);
+    }
+    private void updateProgress(long workDone, long max) {
+        if (Platform.isFxApplicationThread()) {
+            progressBar.setProgress((double) workDone / max);
+        } else {
+            Platform.runLater(() -> progressBar.setProgress((double) workDone / max));
+        }
     }
 }

@@ -1,8 +1,6 @@
 package org.example.models;
 
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
-import org.example.DownloadManager;
 
 public class FileInfo {
 
@@ -11,15 +9,15 @@ public class FileInfo {
     private final SimpleStringProperty url = new SimpleStringProperty();
     private final SimpleStringProperty status = new SimpleStringProperty();
     //'DOWNLOADING', 'DONE', 'FAILED', 'STARTING'
-    private final SimpleStringProperty action = new SimpleStringProperty();
+    private final SimpleStringProperty capacity = new SimpleStringProperty();
 
     private final SimpleStringProperty path = new SimpleStringProperty();
-    public FileInfo(String index, String name, String url, String status, String action, String path) {
+    public FileInfo(String index, String name, String url, String status, String capacity, String path) {
         this.index.set(index);
         this.name.set(name);
         this.url.set(url);
         this.status.set(status);
-        this.action.set(action);
+        this.capacity.set(capacity);
         this.path.set(path);
     }
 
@@ -71,16 +69,16 @@ public class FileInfo {
         this.status.set(status);
     }
 
-    public String getAction() {
-        return action.get();
+    public String getCapacity() {
+        return capacity.get();
     }
 
-    public SimpleStringProperty actionProperty() {
-        return action;
+    public SimpleStringProperty capacityProperty() {
+        return capacity;
     }
 
-    public void setAction(String action) {
-        this.action.set(action);
+    public void setCapacity(String capacity) {
+        this.capacity.set(capacity);
     }
 
     public String getPath() {
@@ -102,7 +100,7 @@ public class FileInfo {
                 ", name=" + name +
                 ", url=" + url +
                 ", status=" + status +
-                ", action=" + action +
+                ", capacity=" + capacity +
                 ", path=" + path +
                 '}';
     }
