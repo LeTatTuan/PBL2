@@ -34,22 +34,27 @@
                         <ProgressBar fx:id="totalProgressBar" prefHeight="15.0" prefWidth="720.0" progress="0.0" />
                         <HBox alignment="CENTER" prefHeight="42.0" prefWidth="748.0" spacing="50.0">
                             <children>
-                                <Button mnemonicParsing="false" onAction="#downloadButtonClicked" prefWidth="100.0" style="-fx-background-color: #eee; -fx-cursor: hand; -fx-font-weight: bold" text="Hide details">
+                                <Button mnemonicParsing="false" onAction="#downloadButtonClicked" prefWidth="100.0" style="-fx-background-color: #f54266; -fx-cursor: hand; -fx-font-weight: bold" text="Hide details">
                                     <padding>
                                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                     </padding>
                                 </Button>
-                                <Button mnemonicParsing="false" onAction="#downloadButtonClicked" prefWidth="100.0" style="-fx-background-color: #eee; -fx-cursor: hand; -fx-font-weight: bold" text="Start Download">
+                                <Button mnemonicParsing="false" onAction="#downloadButtonClicked" prefWidth="100.0" style="-fx-background-color: #b3d1ff; -fx-cursor: hand; -fx-font-weight: bold" text="Start Download">
                                     <padding>
                                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                     </padding>
                                 </Button>
-                                <Button mnemonicParsing="false" onAction="#downloadButtonClicked" prefWidth="100.0" style="-fx-cursor: hand; -fx-background-color: #eee; -fx-font-weight: bold" text="Pause">
+                                <Button mnemonicParsing="false" onAction="#pauseButtonClicked" prefWidth="100.0" style="-fx-cursor: hand; -fx-background-color: #ffff00; -fx-font-weight: bold" text="Pause">
                                     <padding>
                                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                     </padding>
                                 </Button>
-                                <Button mnemonicParsing="false" onAction="#downloadButtonClicked" prefWidth="100.0" style="-fx-cursor: hand; -fx-background-color: #eee; -fx-font-weight: bold" text="Cancel">
+                                 <Button mnemonicParsing="false" onAction="#resumeButtonClicked" prefWidth="100.0" style="-fx-cursor: hand; -fx-background-color: #42f584; -fx-font-weight: bold" text="Resume">
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                    </padding>
+                                </Button>
+                                <Button mnemonicParsing="false" onAction="#cancelButtonClicked" prefWidth="100.0" style="-fx-cursor: hand; -fx-background-color: #ffb366; -fx-font-weight: bold" text="Cancel">
                                     <padding>
                                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                     </padding>

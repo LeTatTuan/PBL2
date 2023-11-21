@@ -1,5 +1,6 @@
 package org.example;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.ProgressBar;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class DownloadManager {
@@ -48,6 +50,8 @@ public class DownloadManager {
     private ProgressBar progressBar8;
     private List<ProgressBar> progressBarList;
     public int index = 0;
+    private volatile AtomicBoolean paused = new AtomicBoolean(false);
+    private volatile AtomicBoolean cancelled = new AtomicBoolean(false);
 
     @FXML
     void downloadButtonClicked(ActionEvent event) {
@@ -67,6 +71,20 @@ public class DownloadManager {
         download.start();
         this.urlTextField.setText("");
     }
+    @FXML
+    void pauseButtonClicked(ActionEvent event) {
+    	paused.set(true);
+    }
+    @FXML
+    void resumeButtonClicked(ActionEvent event) {
+    	paused.set(false);
+    }
+    
+    
+    @FXML
+    void cancelButtonClicked(ActionEvent event) {
+    	cancelled.set(true);
+    }
 
     public void startDownload(FileInfo file) {
         try {
@@ -76,18 +94,18 @@ public class DownloadManager {
             String destinationPath = file.getPath();
             int numThreads = 8;
             Path tempDir = Files.createTempDirectory("Downloading_");
+            List<DownloadThread> downloadThreads = new ArrayList<>();
+
             try {
                 URL url = new URL(fileUrl);
                 long contentLength = url.openConnection().getContentLength();
-//                if(contentLength <= AppConfig.MIN_SIZE) {
-//                    numThreads = 1;
-//                }
                 long chunkSize = contentLength / numThreads;
                 for (int i = 0; i < numThreads; i++) {
                     long startByte = i * chunkSize;
                     long endByte = (i == numThreads - 1) ? contentLength - 1 : startByte + chunkSize - 1;
                     Path tempDownloadingFile = tempDir.resolve("part-" + i + ".tmp");
                     DownloadThread downloadThread = new DownloadThread(fileUrl, startByte, endByte, tempDownloadingFile, progressBarList.get(i));
+                    downloadThreads.add(downloadThread);
                     executorService.execute(downloadThread);
                 }
                 executorService.shutdown();
@@ -127,7 +145,32 @@ public class DownloadManager {
                         System.out.println("File downloaded successfully.");
                         break;
                     }
+                    else if(paused.get()) {
+                    	 downloadThreads.forEach(DownloadThread::pause);
+                         file.setStatus("PAUSED");	
+                    }
+                    else if(cancelled.get()) {
+                        downloadThreads.forEach(DownloadThread::cancel);
+                        if (!executorService.isShutdown()) {
+                            // Nếu chưa shutdown, thì shutdown
+                            executorService.shutdownNow(); 
+                        }
+                        file.setStatus("CANCELLED");
+                        Platform.runLater(() -> {
+                            progressBarList.forEach(progressBar -> progressBar.setProgress(0));
+                        });
+                  
+                        break;
+                    }
+                
+                    else if(!paused.get()) {
+                    	downloadThreads.forEach(DownloadThread::resume);
+                    	file.setStatus("DOWNLOADING");
+                    	
+                    }
                 }
+                cancelled.set(false);
+                    
             } catch (IOException e) {
                 System.err.println("Error downloading file: " + e);
                 Files.delete(tempDir);
