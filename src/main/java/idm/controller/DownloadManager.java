@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -67,6 +68,7 @@ public class DownloadManager {
             long downloaded = 0;
             double transferRate = 0;
             this.downloadInfo = new DownloadInfo(url, filename, path, status, size, downloaded, transferRate);
+            this.txtDownload.setText(downloadInfo.toString());
             Thread startThread = new Thread(() -> {
                 try {
                     startDownload(downloadInfo);
@@ -93,20 +95,19 @@ public class DownloadManager {
                 URL url = new URL(fileUrl);
                 long contentLength = url.openConnection().getContentLength();
                 long chunkSize = contentLength / numThreads;
-                downloadInfoList = FXCollections.observableArrayList();
+//                downloadInfoList = FXCollections.observableArrayList();
                 tableView.setItems(downloadInfoList);
                 for (int i = 0; i < numThreads; i++) {
                     long startByte = i * chunkSize;
                     long endByte = (i == numThreads - 1) ? contentLength - 1 : startByte + chunkSize - 1;
                     Path tempDownloadingFile = tempDir.resolve("part-" + i + ".tmp");
-                    DownloadInfoOneChunk downloadInfoOneChunk = new DownloadInfoOneChunk(Integer.toString(i + 1), "0", "Receiving data...");
-                    downloadInfoList.add(downloadInfoOneChunk);
-                    DownloadThread downloadThread = new DownloadThread(downloadInfo.getUrl(), startByte, endByte, tempDownloadingFile, progressBarList.get(i), downloadInfoOneChunk);
+//                    DownloadInfoOneChunk downloadInfoOneChunk = new DownloadInfoOneChunk(Integer.toString(i + 1), "0", "Receiving data...");
+//                    downloadInfoList.add(downloadInfoOneChunk);
+                    DownloadThread downloadThread = new DownloadThread(downloadInfo.getUrl(), startByte, endByte, tempDownloadingFile, progressBarList.get(i), downloadInfoList.get(i));
                     executorService.execute(downloadThread);
                 }
 
                 executorService.shutdown();
-
 
                 while (true) {
                     if (executorService.isTerminated()) {
@@ -135,6 +136,8 @@ public class DownloadManager {
                         Files.delete(tempDir);
                         System.out.println("File downloaded successfully.");
                         downloadInfo.setStatus("Received data");
+                        downloadInfo.setDownloaded(contentLength);
+                        this.txtDownload.setText(downloadInfo.toString());
                         break;
                     }
                 }
@@ -149,42 +152,29 @@ public class DownloadManager {
         }
     }
 
-    private String formatFileSize(long size) {
-        if (size <= 0) return "0";
-        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
-        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-        return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[1]);
-    }
-
-    public TableView<DownloadInfoOneChunk> getTableView() {
-        return tableView;
-    }
-
-    private void handleRowSelection(DownloadInfoOneChunk selectedRow) {
-        if (selectedRow != null) {
-            // Cập nhật TextArea với thông tin từ hàng được chọn
-            txtDownload.setText("Selected Row Info:\n" +
-                    "Index: " + selectedRow.getIndex() + "\n" +
-                    "Downloaded: " + selectedRow.getDownloaded() + "\n" +
-                    "Info: " + selectedRow.getInfo());
-        } else {
-            // Nếu không có hàng được chọn, xóa nội dung TextArea
-            txtDownload.clear();
-        }
-    }
-
     // Phương thức cập nhật tổng cột Downloaded
-    private void updateTotalDownloaded() {
-        int totalDownloaded = 0;
-        for (DownloadInfoOneChunk item : downloadInfoList) {
-            try {
-                totalDownloaded += Integer.parseInt(item.getDownloaded());
-            } catch (NumberFormatException e) {
-                // Handle the case where the value is not a valid integer
+    private void updateTotalDownloaded(String newValue, String oldValue) {
+        long totalDownloaded = 0;
+        try {
+            String downloadedS = newValue.replace(".", "");
+            String downloadedS1 = downloadedS.substring(0, downloadedS.length() - 3).replace(" ", "");
+            String downloadedT = "";
+            String downloadedT1 = "0";
+            if(oldValue != "0") {
+                downloadedT = oldValue.replace(".", "");
+                downloadedT1 = downloadedT.substring(0, downloadedT.length() - 3).replace(" ", "");
             }
+            totalDownloaded = Long.parseLong(downloadedS1) - Long.parseLong(downloadedT1);
+            //KB
+            this.downloadedSize += totalDownloaded;
+            // Bytes
+            this.downloadInfo.setDownloaded(this.downloadedSize*1024);
+            this.txtDownload.setText(this.downloadInfo.toString());
+        } catch (NumberFormatException e) {
+            System.out.println("check error: " + e.getMessage());
         }
-        txtDownload.setText("Total Downloaded: " + totalDownloaded);
     }
+
     @FXML
     public void initialize() {
         progressBarList = new ArrayList<>();
@@ -198,6 +188,10 @@ public class DownloadManager {
         progressBarList.add(progressBar8);
         for (ProgressBar progressBar : progressBarList) {
             progressBar = new ProgressBar();
+        }
+        downloadInfoList = FXCollections.observableArrayList();
+        for (int i = 0; i < 8; i++) {
+            downloadInfoList.add(new DownloadInfoOneChunk(Integer.toString(i + 1), "0", "Receiving data..."));
         }
         System.out.println("View initialized");
 
@@ -217,26 +211,12 @@ public class DownloadManager {
         info.setCellValueFactory(p -> {
             return p.getValue().InfoProperty();
         });
-
-        // Thêm ChangeListener cho mỗi hàng trong TableView
-        tableView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<DownloadInfoOneChunk>() {
-            @Override
-            public void changed(ObservableValue<? extends DownloadInfoOneChunk> observable, DownloadInfoOneChunk oldValue, DownloadInfoOneChunk newValue) {
-                // Xử lý sự kiện khi hàng được chọn thay đổi
-                handleRowSelection(newValue);
-            }
-        });
-
-        // Thêm ChangeListener cho thuộc tính DownloadedProperty() của mỗi hàng
-        for (DownloadInfoOneChunk item : downloadInfoList) {
-            item.DownloadedProperty().addListener(new ChangeListener<String>() {
-                @Override
-                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                    // Xử lý sự kiện khi giá trị của cột Downloaded thay đổi
-                    updateTotalDownloaded();
-                }
+        for (DownloadInfoOneChunk downloadInfoOneChunk : downloadInfoList) {
+            downloadInfoOneChunk.DownloadedProperty().addListener((observable, oldValue, newValue) -> {
+                Platform.runLater(() -> {
+                     updateTotalDownloaded(newValue,oldValue);
+                });
             });
         }
-
     }
 }
