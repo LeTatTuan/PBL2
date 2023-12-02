@@ -64,7 +64,7 @@ public class DownloadManager {
             String path = AppConfig.DOWNLOAD_PATH + File.separator + filename;
             URL Url = new URL(url);
             String status = "Receiving data...";
-            long size = Url.openConnection().getContentLength();
+            long size = Url.openConnection().getContentLengthLong();
             long downloaded = 0;
             double transferRate = 0;
             this.downloadInfo = new DownloadInfo(url, filename, path, status, size, downloaded, transferRate);
@@ -93,7 +93,7 @@ public class DownloadManager {
             Path tempDir = Files.createTempDirectory("Downloading_");
             try {
                 URL url = new URL(fileUrl);
-                long contentLength = url.openConnection().getContentLength();
+                long contentLength = url.openConnection().getContentLengthLong();
                 long chunkSize = contentLength / numThreads;
 //                downloadInfoList = FXCollections.observableArrayList();
                 tableView.setItems(downloadInfoList);

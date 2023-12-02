@@ -1,40 +1,17 @@
-//package idm.handleEvent;
-//
-//import idm.controller.DownloadManager;
-//import javafx.beans.value.ChangeListener;
-//import javafx.beans.value.ObservableValue;
-//
-//public class DownloadedChangeListener implements ChangeListener<String> {
-//
-//    @Override
-//    public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-//        // Xử lý khi giá trị của cột thay đổi
-//        System.out.println("Value of the downloaded property changed: " + newValue);
-//
-//        // Cập nhật tổng hoặc thực hiện các hành động khác tùy thuộc vào yêu cầu của bạn
-//        updateSumOrOtherActions();
-//    }
-//
-//    private void updateSumOrOtherActions() {
-//        // Thực hiện các hành động khác tùy thuộc vào yêu cầu của bạn
-//        // Ví dụ: Cập nhật tổng
-//        double sum = calculateSum();
-//        System.out.println("Sum of downloaded values: " + sum);
-//    }
-//
-//    private double calculateSum() {
-//        // Tính tổng các giá trị của cột từ TableView
-//        DownloadManager downloadManager = new DownloadManager();
-//        return ((downloadManager).getTableView().getItems().stream())
-//                .mapToDouble(item -> parseLong(item.getDownloaded()))
-//                .sum();
-//    }
-//
-//    private long parseLong(String value) {
-//        try {
-//            return Long.parseLong(value.substring(0, value.length() - 3));
-//        } catch (NumberFormatException e) {
-//            return 0;
-//        }
-//    }
-//}
+package idm.handleEvent;
+import java.io.IOException;
+import java.net.URL;
+
+public class DownloadedChangeListener{
+    public static void main(String[] args) {
+        //String url = "https://vod-progressive.akamaized.net/exp=1701574332~acl=%2Fvimeo-prod-src-reg-us-east1%2Fvideos%2F3683051887~hmac=d1fd0070f19dfe71c4fb9b76927b98b4569f66afcf3bf5804cc0e6ffd65fb575/vimeo-prod-src-reg-us-east1/videos/3683051887?download=1&filename=189813+%28Original%29.mp4&source=1";
+        //String url = "https://download.microsoft.com/download/6/2/A/62A76ABB-9990-4EFC-A4FE-C7D698DAEB96/9600.17050.WINBLUE_REFRESH.140317-1640_X64FRE_SERVER_EVAL_EN-US-IR3_SSS_X64FREE_EN-US_DV9.ISO";
+        String url = "https://phanmem123-my.sharepoint.com/personal/data_phanmem123_onmicrosoft_com/_layouts/15/download.aspx?SourceUrl=%2Fpersonal%2Fdata%5Fphanmem123%5Fonmicrosoft%5Fcom%2FDocuments%2F%5BPhanmem123%2Ecom%5D%20MATLAB%20R2019a%2Erar";
+        try{
+            URL Url = new URL(url);
+            long size = Url.openConnection().getContentLengthLong();
+            System.out.println(size);
+        }catch (IOException e) {
+        }
+    }
+}
