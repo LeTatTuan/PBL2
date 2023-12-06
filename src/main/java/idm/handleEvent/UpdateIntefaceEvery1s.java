@@ -1,29 +1,32 @@
 package idm.handleEvent;
 
 import idm.models.DownloadInfo;
-import idm.models.DownloadInfoOneChunk;
 import javafx.scene.control.TextArea;
-import javafx.scene.text.Text;
 
 public class UpdateIntefaceEvery1s implements Runnable {
-    private long downloadedSize;
-    private long size;
-    private double transferRate;
-    private double timeleft;
-    private TextArea txtDownloaded;
+    private DownloadInfo downloadInfo;
     private long downloadedBefore1s;
 
-    public UpdateIntefaceEvery1s(DownloadInfo downloadInfo, TextArea txtDownloaded) {
-        this.downloadedSize = downloadInfo.getDownloaded();
-        this.size = downloadInfo.getSize();
-        this.transferRate = downloadInfo.getTransferRate();
-        this.timeleft = downloadInfo.getTimeleft();
-        this.txtDownloaded = txtDownloaded;
+    public UpdateIntefaceEvery1s(DownloadInfo downloadInfo, long downloadedBefore1s) {
+     this.downloadInfo = downloadInfo;
+     this.downloadedBefore1s = downloadedBefore1s;
     }
 
     @Override
     public void run() {
-        transferRate = downloadedSize / 1000;
-        timeleft = (size - downloadedSize)/transferRate;
+        long downloadedSize = downloadInfo.getDownloaded();
+        long size = downloadInfo.getSize();
+        double transferRate;
+        double timeleft;
+
+        //bytes - bytes
+        transferRate = (downloadedSize - downloadedBefore1s) / 1000;
+        System.out.println("TransferRate: " + transferRate + "KB/s");
+        timeleft = (size - downloadedSize)/(transferRate*1024);
+        System.out.println("Timeleft: " + timeleft + "s");
+        downloadInfo.setTransferRate(transferRate);
+        downloadInfo.setTimeleft(timeleft);
+        this.downloadedBefore1s = downloadedSize;
+        System.out.println(downloadInfo.formatFileSize(this.downloadedBefore1s));
     }
 }

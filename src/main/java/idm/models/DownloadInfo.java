@@ -92,15 +92,19 @@ public class DownloadInfo {
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
         return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[1]);
     }
-
+    public long formatFileSizeToLong(String value) {
+        String downloaded = value.replace(".", "");
+        String result = downloaded.substring(0, downloaded.length() - 3).replace(" ", "");
+        return Long.parseLong(result);
+    }
     @Override
     public String toString() {
         String infor = url + "\n"
                  + "Status              " + status + "\n"
                  + "File size           " + formatFileSize(size) + "\n"
                  + "Downloaded          " + formatFileSize(downloaded) + "\n"
-                 + "Transfer rate       " + transferRate + "\n"
-                 + "Time left           " + timeleft + " s";
+                 + "Transfer rate       " + transferRate + " KB/s" + "\n"
+                 + "Time left           " + String.format("%.2f", timeleft) + " s";
         return infor;
     }
 }

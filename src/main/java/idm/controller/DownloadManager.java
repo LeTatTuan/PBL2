@@ -1,5 +1,6 @@
 package idm.controller;
 
+import idm.handleEvent.UpdateIntefaceEvery1s;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -26,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class DownloadManager {
@@ -54,6 +57,7 @@ public class DownloadManager {
     private ProgressBar progressBar8;
     private List<ProgressBar> progressBarList;
     private long downloadedSize = 0;
+    private long downloadedBefore1s = 0;
     private DownloadInfo downloadInfo;
 
     @FXML
@@ -85,6 +89,16 @@ public class DownloadManager {
 
     public void startDownload(DownloadInfo downloadInfo) {
         try {
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+            UpdateIntefaceEvery1s updateIntefaceEvery1s = new UpdateIntefaceEvery1s(downloadInfo, downloadedBefore1s);
+            // Lên lịch gọi hàm sau mỗi 1 giây
+            scheduler.scheduleAtFixedRate(() -> {
+                Platform.runLater(() -> {
+                    updateIntefaceEvery1s.run();
+                    this.txtDownload.setText(downloadInfo.toString());
+                });
+            }, 0, 1, TimeUnit.SECONDS);
+
             ExecutorService executorService = Executors.newCachedThreadPool();
             String fileUrl = downloadInfo.getUrl();
             String filename = downloadInfo.getFileName();
@@ -95,14 +109,11 @@ public class DownloadManager {
                 URL url = new URL(fileUrl);
                 long contentLength = url.openConnection().getContentLengthLong();
                 long chunkSize = contentLength / numThreads;
-//                downloadInfoList = FXCollections.observableArrayList();
                 tableView.setItems(downloadInfoList);
                 for (int i = 0; i < numThreads; i++) {
                     long startByte = i * chunkSize;
                     long endByte = (i == numThreads - 1) ? contentLength - 1 : startByte + chunkSize - 1;
                     Path tempDownloadingFile = tempDir.resolve("part-" + i + ".tmp");
-//                    DownloadInfoOneChunk downloadInfoOneChunk = new DownloadInfoOneChunk(Integer.toString(i + 1), "0", "Receiving data...");
-//                    downloadInfoList.add(downloadInfoOneChunk);
                     DownloadThread downloadThread = new DownloadThread(downloadInfo.getUrl(), startByte, endByte, tempDownloadingFile, progressBarList.get(i), downloadInfoList.get(i));
                     executorService.execute(downloadThread);
                 }
@@ -137,7 +148,9 @@ public class DownloadManager {
                         System.out.println("File downloaded successfully.");
                         downloadInfo.setStatus("Received data");
                         downloadInfo.setDownloaded(contentLength);
+                        downloadInfo.setTimeleft(0.0);
                         this.txtDownload.setText(downloadInfo.toString());
+                        scheduler.shutdown();
                         break;
                     }
                 }
@@ -156,20 +169,15 @@ public class DownloadManager {
     private void updateTotalDownloaded(String newValue, String oldValue) {
         long totalDownloaded = 0;
         try {
-            String downloadedS = newValue.replace(".", "");
-            String downloadedS1 = downloadedS.substring(0, downloadedS.length() - 3).replace(" ", "");
-            String downloadedT = "";
-            String downloadedT1 = "0";
-            if(oldValue != "0") {
-                downloadedT = oldValue.replace(".", "");
-                downloadedT1 = downloadedT.substring(0, downloadedT.length() - 3).replace(" ", "");
+            if(oldValue == "0") {
+                return;
             }
-            totalDownloaded = Long.parseLong(downloadedS1) - Long.parseLong(downloadedT1);
+            totalDownloaded = downloadInfo.formatFileSizeToLong(newValue) - downloadInfo.formatFileSizeToLong(oldValue);
             //KB
             this.downloadedSize += totalDownloaded;
             // Bytes
             this.downloadInfo.setDownloaded(this.downloadedSize*1024);
-            this.txtDownload.setText(this.downloadInfo.toString());
+            //this.txtDownload.setText(this.downloadInfo.toString());
         } catch (NumberFormatException e) {
             System.out.println("check error: " + e.getMessage());
         }
@@ -219,4 +227,5 @@ public class DownloadManager {
             });
         }
     }
+
 }
