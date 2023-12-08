@@ -93,7 +93,7 @@ public class DownloadInfo {
         return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[1]);
     }
     public long formatFileSizeToLong(String value) {
-        String downloaded = value.replace(".", "");
+        String downloaded = value.replace(",", "");
         String result = downloaded.substring(0, downloaded.length() - 3).replace(" ", "");
         return Long.parseLong(result);
     }
