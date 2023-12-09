@@ -267,6 +267,13 @@ public class DownloadManager {
             System.err.println("Error downloading file: " + e.getMessage());
             downloadInfo.setStatus("FAILED");
         }
+        if(hide.get()) {
+        	progressBarList.forEach(progressBar -> progressBar.setVisible(true)); 
+        	tableView.setVisible(true);}
+        paused.set(false);
+        shClick.set(false);
+        hide.set(false);
+        show.set(true);
     }
 
     // Phương thức cập nhật tổng cột Downloaded
