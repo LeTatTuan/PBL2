@@ -16,7 +16,7 @@ public class App extends Application {
     private static Scene scene;
 
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("downloadManager"), 1000, 700);
+        scene = new Scene(loadFXML("downloadManager"));
         stage.setScene(scene);
         stage.show();
     }

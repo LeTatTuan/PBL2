@@ -90,7 +90,7 @@ public class DownloadInfo {
         if (size <= 0) return "0";
         final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-        return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[1]);
+        return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[2]);
     }
     public long formatFileSizeToLong(String value) {
         String downloaded = value.replace(",", "");
@@ -103,8 +103,8 @@ public class DownloadInfo {
                  + "Status              " + status + "\n"
                  + "File size           " + formatFileSize(size) + "\n"
                  + "Downloaded          " + formatFileSize(downloaded) + "\n"
-                 + "Transfer rate       " + transferRate + " KB/s" + "\n"
-                 + "Time left           " + String.format("%.2f", timeleft) + " s";
+                 + "Transfer rate       " + String.format("%.3f", transferRate) + " MB/sec" + "\n"
+                 + "Time left           " + String.format("%.0f", timeleft) + " sec";
         return infor;
     }
 }

@@ -32,9 +32,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import idm.controller.DownloadThread;
+import javafx.scene.layout.AnchorPane;
 
 
 public class DownloadManager {
+    @FXML
+    private AnchorPane containerPane;
     @FXML
     private TextField urlTextField;
     @FXML
@@ -70,14 +73,7 @@ public class DownloadManager {
     private volatile AtomicBoolean hide = new AtomicBoolean(false);
     private volatile AtomicBoolean show = new AtomicBoolean(true);
 
-
-
-
-
-
     List<DownloadThread> downloadThreads = new ArrayList<>();
-
-
 
     @FXML
     void downloadButtonClicked(ActionEvent event) {
@@ -105,29 +101,33 @@ public class DownloadManager {
         }
         this.urlTextField.setText("");
     }
+
     @FXML
     void pauseButtonClicked(ActionEvent event) {
-    	//updateIntefaceEvery1s.paused();
-    	paused.set(true);
-    	
+        //updateIntefaceEvery1s.paused();
+        paused.set(true);
+
     }
+
     @FXML
     void resumeButtonClicked(ActionEvent event) {
-    	paused.set(false);
+        paused.set(false);
     }
+
     @FXML
     void cancelButtonClicked(ActionEvent event) {
-    	cancelled.set(true);
+        cancelled.set(true);
     }
+
     @FXML
     void showhideButtonClicked(ActionEvent event) {
-    	
+
         shClick.set(true);
         show.set(!show.get());
         hide.set(!hide.get());
 
     }
-    
+
 
     public void startDownload(DownloadInfo downloadInfo) {
         try {
@@ -190,8 +190,8 @@ public class DownloadManager {
                         Files.delete(tempDir);
                         System.out.println("File downloaded successfully.");
                         for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
-                          downloadInfoChunk.setInfo("Received data successfully..."); // hoặc bất kỳ thông tin nào khác bạn muốn set
-                      }
+                            downloadInfoChunk.setInfo("Received data successfully"); // hoặc bất kỳ thông tin nào khác bạn muốn set
+                        }
                         cancelled.set(false);
                         downloadInfo.setStatus("Received data");
                         downloadInfo.setDownloaded(contentLength);
@@ -199,65 +199,62 @@ public class DownloadManager {
                         this.txtDownload.setText(downloadInfo.toString());
                         scheduler.shutdown();
                         break;
-                    }
-    
-                    else if(cancelled.get()) {
-                      	 downloadInfo.setStatus("Cancelled");
-                      	 downloadInfo.setSize(0);
-                      	 downloadInfo.setDownloaded((Long.parseLong(downloadInfo.formatFileSize(-1))));
-                      	 downloadInfo.setTransferRate(0);
-                      	 downloadInfo.setTimeleft(0);
-                      	 downloadThreads.forEach(DownloadThread::cancel);
-                          if (!executorService.isShutdown()) {
-                              // Nếu chưa shutdown, thì shutdown
-                              executorService.shutdownNow(); 
-                          }
-                          Platform.runLater(() -> {
-                              progressBarList.forEach(progressBar -> progressBar.setProgress(0));
-                          });
-                          
-                          tableView.getItems().clear();
+                    } else if (cancelled.get()) {
+                        downloadInfo.setStatus("Cancelled");
+                        downloadInfo.setSize(0);
+                        downloadInfo.setDownloaded((Long.parseLong(downloadInfo.formatFileSize(-1))));
+                        downloadInfo.setTransferRate(0);
+                        downloadInfo.setTimeleft(0);
+                        downloadThreads.forEach(DownloadThread::cancel);
+                        if (!executorService.isShutdown()) {
+                            executorService.shutdownNow();
+                        }
+                        Platform.runLater(() -> {
+                            progressBarList.forEach(progressBar -> progressBar.setProgress(0));
+                        });
 
-                          break;
-                       }
+                        tableView.getItems().clear();
 
-                    else if (shClick.get()) {
-                    	if(hide.get() == true && show.get() == false) {
-                    	Platform.runLater(() -> {
-                        	tableView.setVisible(false);
-                            BtShowHide.setText("Show Details");
-                            progressBarList.forEach(progressBar -> progressBar.setVisible(false));      
-                            shClick.set(false);//quan trong
-                        }); 
-                     }
-                    
-                        if (hide.get() == false && show.get() == true ){
-                        	   Platform.runLater(() -> {
-                        	  tableView.setVisible(true);
-                              BtShowHide.setText("Hide Details");
-                              progressBarList.forEach(progressBar -> progressBar.setVisible(true)); 
-                              shClick.set(false);//quan trong
-                        	   });    
-                       }
-                      
-                    }
-                    else if(paused.get()) {
-                    	downloadThreads.forEach(DownloadThread::pause);
+                        break;
+                    } else if (shClick.get()) {
+                        containerPane.requestLayout();
+                        if (hide.get() && !show.get()) {
+                            Platform.runLater(() -> {
+                                tableView.setVisible(false);
+                                BtShowHide.setText("Show Details");
+                                containerPane.setPrefHeight(700.0);
+                                progressBarList.forEach(progressBar -> progressBar.setVisible(false));
+                                shClick.set(false);//quan trong
+                            });
+
+                        }
+
+                        if (!hide.get() && show.get()) {
+                            Platform.runLater(() -> {
+                                tableView.setVisible(true);
+                                BtShowHide.setText("Hide Details");
+                                containerPane.setPrefHeight(374.0);
+                                progressBarList.forEach(progressBar -> progressBar.setVisible(true));
+                                shClick.set(false);//quan trong
+                            });
+
+                        }
+
+                    } else if (paused.get()) {
+                        downloadThreads.forEach(DownloadThread::pause);
                         downloadInfo.setStatus("Paused");
                         for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
                             downloadInfoChunk.setInfo("Paused"); // hoặc bất kỳ thông tin nào khác bạn muốn set
                         }
-                    }
-                   
-                    else if(!paused.get()) {
-                    	downloadThreads.forEach(DownloadThread::resume);
+                    } else if (!paused.get()) {
+                        downloadThreads.forEach(DownloadThread::resume);
                         downloadInfo.setStatus("Received data");
                         for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
                             downloadInfoChunk.setInfo("Received data"); // hoặc bất kỳ thông tin nào khác bạn muốn set
                         }
                     }
                 }
- 
+
             } catch (IOException e) {
                 System.err.println("Error downloading file: " + e);
                 Files.delete(tempDir);
@@ -267,9 +264,10 @@ public class DownloadManager {
             System.err.println("Error downloading file: " + e.getMessage());
             downloadInfo.setStatus("FAILED");
         }
-        if(hide.get()) {
-        	progressBarList.forEach(progressBar -> progressBar.setVisible(true)); 
-        	tableView.setVisible(true);}
+        if (hide.get()) {
+            progressBarList.forEach(progressBar -> progressBar.setVisible(true));
+            tableView.setVisible(true);
+        }
         paused.set(false);
         shClick.set(false);
         hide.set(false);
@@ -280,14 +278,14 @@ public class DownloadManager {
     private void updateTotalDownloaded(String newValue, String oldValue) {
         long totalDownloaded = 0;
         try {
-            if(oldValue == "0") {
+            if (oldValue == "0") {
                 return;
             }
             totalDownloaded = downloadInfo.formatFileSizeToLong(newValue) - downloadInfo.formatFileSizeToLong(oldValue);
             //KB
             this.downloadedSize += totalDownloaded;
             // Bytes
-            this.downloadInfo.setDownloaded(this.downloadedSize*1024);
+            this.downloadInfo.setDownloaded(this.downloadedSize * 1024);
             //this.txtDownload.setText(this.downloadInfo.toString());
         } catch (NumberFormatException e) {
             System.out.println("check error: " + e.getMessage());
@@ -333,10 +331,10 @@ public class DownloadManager {
         for (DownloadInfoOneChunk downloadInfoOneChunk : downloadInfoList) {
             downloadInfoOneChunk.DownloadedProperty().addListener((observable, oldValue, newValue) -> {
                 Platform.runLater(() -> {
-                     updateTotalDownloaded(newValue,oldValue);
+                    updateTotalDownloaded(newValue, oldValue);
                 });
             });
         }
     }
-
 }
+

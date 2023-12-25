@@ -32,17 +32,15 @@ public class UpdateIntefaceEvery1s implements Runnable {
             long downloadedSize = downloadInfo.getDownloaded();
             long size = downloadInfo.getSize();
             double transferRate;
-            double timeleft;
+            double timeLeft = 0;
 
             //bytes - bytes
-            transferRate = (downloadedSize - downloadedBefore1s) / 1000;
-            System.out.println("TransferRate: " + transferRate + "KB/s");
-            timeleft = (size - downloadedSize) / (transferRate * 1024);
-            System.out.println("Timeleft: " + timeleft + "s");
-            downloadInfo.setTransferRate(transferRate);
-            downloadInfo.setTimeleft(timeleft);
+            transferRate = (double) (downloadedSize - downloadedBefore1s) / 1000;
+            double transferRateMB = transferRate / 1024;
+            timeLeft = (size - downloadedSize) / (transferRate * 1024);
+            downloadInfo.setTransferRate(transferRateMB);
+            downloadInfo.setTimeleft(timeLeft);
             this.downloadedBefore1s = downloadedSize;
-            System.out.println(downloadInfo.formatFileSize(this.downloadedBefore1s));
         }
         else {
         }

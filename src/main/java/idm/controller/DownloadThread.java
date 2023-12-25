@@ -95,7 +95,7 @@ public class DownloadThread implements Runnable {
                 progressBar.setProgress((double) workDone / max);
                 downloadInfoOneChunk.setDownloaded(downloadInfoOneChunk.formatFileSize(workDone));
                 if (isSetInfor) {
-                    downloadInfoOneChunk.setInfo("Received data successfully...");
+                    downloadInfoOneChunk.setInfo("Received data successfully");
                 }
             } 
         } else {
@@ -105,7 +105,7 @@ public class DownloadThread implements Runnable {
                     downloadInfoOneChunk.setDownloaded(downloadInfoOneChunk.formatFileSize(workDone));
                 }
                 if (isSetInfor) {
-                    downloadInfoOneChunk.setInfo("Received data successfully...");
+                    downloadInfoOneChunk.setInfo("Received data successfully");
                 }
             });
         }
