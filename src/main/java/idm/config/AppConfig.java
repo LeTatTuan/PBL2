@@ -1,5 +1,5 @@
 package idm.config;
 
 public class AppConfig {
-    public static  final String DOWNLOAD_PATH = "D:\\Uni Procedure\\Nam3\\Downloads";
+    public static final String DOWNLOAD_PATH = "D:\\University\\ThreeYear\\semester5\\PBL4\\Downloads";
 }

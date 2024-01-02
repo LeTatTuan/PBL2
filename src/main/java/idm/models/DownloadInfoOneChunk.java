@@ -45,11 +45,11 @@ public class DownloadInfoOneChunk {
     }
 
     public void setInfo(String info) {this.info.set(info);}
-    public String formatFileSize(long size) {
+    public String formatFileSizeToByte(long size) {
+        // Bytes => KB
         if (size <= 0) return "0";
         final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
-        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-        return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[2]);
+        return String.format("%s %s", new DecimalFormat("#,##0").format(size / 1024), units[1]);
     }
     @Override
     public String toString() {

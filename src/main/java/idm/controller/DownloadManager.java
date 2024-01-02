@@ -1,13 +1,9 @@
 package idm.controller;
 
-import idm.handleEvent.UpdateIntefaceEvery1s;
+import idm.handleEvent.UpdateUIEverySecond;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import idm.config.AppConfig;
@@ -22,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -31,13 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import idm.controller.DownloadThread;
-import javafx.scene.layout.AnchorPane;
-
 
 public class DownloadManager {
-    @FXML
-    private AnchorPane containerPane;
     @FXML
     private TextField urlTextField;
     @FXML
@@ -47,6 +37,8 @@ public class DownloadManager {
     private ObservableList<DownloadInfoOneChunk> downloadInfoList;
     @FXML
     private Button BtShowHide;
+    @FXML
+    private ProgressBar totalProgressBar;
     @FXML
     private ProgressBar progressBar1;
     @FXML
@@ -65,23 +57,23 @@ public class DownloadManager {
     private ProgressBar progressBar8;
     private List<ProgressBar> progressBarList;
     private long downloadedSize = 0;
-    private long downloadedBefore1s = 0;
     private DownloadInfo downloadInfo;
     private volatile AtomicBoolean paused = new AtomicBoolean(false);
     private volatile AtomicBoolean cancelled = new AtomicBoolean(false);
     private volatile AtomicBoolean shClick = new AtomicBoolean(false);
     private volatile AtomicBoolean hide = new AtomicBoolean(false);
     private volatile AtomicBoolean show = new AtomicBoolean(true);
-
     List<DownloadThread> downloadThreads = new ArrayList<>();
+    ExecutorService executorService = Executors.newCachedThreadPool();
 
     @FXML
-    void downloadButtonClicked(ActionEvent event) {
+    void downloadButtonClicked() {
         try {
             String url = this.urlTextField.getText().trim();
-            String filename = url.substring(url.lastIndexOf("/") + 1);
-            String path = AppConfig.DOWNLOAD_PATH + File.separator + filename;
+            //String filename = url.substring(url.lastIndexOf("/") + 1);
             URL Url = new URL(url);
+            String filename = Paths.get(Url.getPath()).getFileName().toString();
+            String path = AppConfig.DOWNLOAD_PATH + File.separator + filename;
             String status = "Receiving data...";
             long size = Url.openConnection().getContentLengthLong();
             long downloaded = 0;
@@ -92,7 +84,7 @@ public class DownloadManager {
                 try {
                     startDownload(downloadInfo);
                 } catch (Exception e) {
-
+                    e.printStackTrace();
                 }
             });
             startThread.start();
@@ -103,45 +95,89 @@ public class DownloadManager {
     }
 
     @FXML
-    void pauseButtonClicked(ActionEvent event) {
+    void pauseButtonClicked() {
         //updateIntefaceEvery1s.paused();
         paused.set(true);
-
+        downloadThreads.forEach(DownloadThread::pause);
+        downloadInfo.setStatus("Paused");
+        for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
+            downloadInfoChunk.setInfo("Paused");
+        }
     }
 
     @FXML
-    void resumeButtonClicked(ActionEvent event) {
+    void resumeButtonClicked() {
         paused.set(false);
+        downloadThreads.forEach(DownloadThread::resume);
+        downloadInfo.setStatus("Receiving data...");
+        for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
+            downloadInfoChunk.setInfo("Receiving data...");
+        }
     }
 
     @FXML
-    void cancelButtonClicked(ActionEvent event) {
+    void cancelButtonClicked() {
         cancelled.set(true);
+        downloadInfo.setStatus("Cancelled");
+        downloadInfo.setSize(0);
+        downloadInfo.setDownloaded((Long.parseLong(downloadInfo.formatFileSizeToByte(-1))));
+        downloadInfo.setTransferRate(0);
+        downloadInfo.setTimeLeft(0);
+        downloadThreads.forEach(DownloadThread::cancel);
+        if (!executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
+        Platform.runLater(() -> {
+            progressBarList.forEach(progressBar -> progressBar.setProgress(0));
+        });
+        totalProgressBar.setProgress(0.0);
+        tableView.getItems().clear();
     }
 
     @FXML
-    void showhideButtonClicked(ActionEvent event) {
-
+    void showhideButtonClicked() {
         shClick.set(true);
         show.set(!show.get());
         hide.set(!hide.get());
-
+        if (shClick.get()) {
+            if (hide.get() && !show.get()) {
+                Platform.runLater(() -> {
+                    tableView.setVisible(false);
+                    BtShowHide.setText("Show Details");
+                    progressBarList.forEach(progressBar -> progressBar.setVisible(false));
+                    shClick.set(false);//quan trong
+                });
+            }
+            if (!hide.get() && show.get()) {
+                Platform.runLater(() -> {
+                    tableView.setVisible(true);
+                    BtShowHide.setText("Hide Details");
+                    progressBarList.forEach(progressBar -> progressBar.setVisible(true));
+                    shClick.set(false);//quan trong
+                });
+            }
+        }
     }
 
 
     public void startDownload(DownloadInfo downloadInfo) {
         try {
+            for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
+                downloadInfoChunk.setInfo("Receiving data...");
+            }
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-            UpdateIntefaceEvery1s updateIntefaceEvery1s = new UpdateIntefaceEvery1s(downloadInfo, downloadedBefore1s, paused, cancelled);
+            long downloadedBefore1s = 0;
+            UpdateUIEverySecond updateIntefaceEvery1s = new UpdateUIEverySecond(downloadInfo, downloadedBefore1s, paused, cancelled);
             // Lên lịch gọi hàm sau mỗi 1 giây
             scheduler.scheduleAtFixedRate(() -> {
                 Platform.runLater(() -> {
                     updateIntefaceEvery1s.run();
                     this.txtDownload.setText(downloadInfo.toString());
+                    this.totalProgressBar.setProgress((double) this.downloadInfo.getDownloaded() / this.downloadInfo.getSize());
                 });
             }, 0, 1, TimeUnit.SECONDS);
 
-            ExecutorService executorService = Executors.newCachedThreadPool();
+
             String fileUrl = downloadInfo.getUrl();
             String filename = downloadInfo.getFileName();
             String destinationPath = downloadInfo.getPath();
@@ -151,6 +187,7 @@ public class DownloadManager {
                 URL url = new URL(fileUrl);
                 long contentLength = url.openConnection().getContentLengthLong();
                 long chunkSize = contentLength / numThreads;
+                executorService = Executors.newCachedThreadPool();
                 tableView.setItems(downloadInfoList);
                 for (int i = 0; i < numThreads; i++) {
                     long startByte = i * chunkSize;
@@ -160,23 +197,13 @@ public class DownloadManager {
                     downloadThreads.add(downloadThread);
                     executorService.execute(downloadThread);
                 }
-
                 executorService.shutdown();
-
                 while (true) {
                     if (executorService.isTerminated()) {
                         int duplicateCounter = 1;
                         Path finalPath = Paths.get(destinationPath);
                         while (Files.exists(finalPath)) {
-                            String newFilename = filename;
-                            int dotIndex = filename.lastIndexOf(".");
-                            if (dotIndex != -1) {
-                                String baseName = filename.substring(0, dotIndex);
-                                String extension = filename.substring(dotIndex);
-                                newFilename = baseName + "(" + duplicateCounter + ")" + extension;
-                            } else {
-                                newFilename = filename + "(" + duplicateCounter + ")";
-                            }
+                            String newFilename = getFilename(filename, duplicateCounter);
                             finalPath = Paths.get(finalPath.getParent().toString(), newFilename);
                             duplicateCounter++;
                         }
@@ -190,71 +217,20 @@ public class DownloadManager {
                         Files.delete(tempDir);
                         System.out.println("File downloaded successfully.");
                         for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
-                            downloadInfoChunk.setInfo("Received data successfully"); // hoặc bất kỳ thông tin nào khác bạn muốn set
+                            downloadInfoChunk.setInfo("Received data successfully");
                         }
                         cancelled.set(false);
                         downloadInfo.setStatus("Received data");
-                        downloadInfo.setDownloaded(contentLength);
-                        downloadInfo.setTimeleft(0.0);
+                        downloadInfo.setDownloaded(downloadInfo.getSize());
+                        downloadInfo.setTimeLeft(0.0);
                         this.txtDownload.setText(downloadInfo.toString());
+                        Platform.runLater(() -> {
+                            this.totalProgressBar.setProgress(1);
+                        });
                         scheduler.shutdown();
                         break;
-                    } else if (cancelled.get()) {
-                        downloadInfo.setStatus("Cancelled");
-                        downloadInfo.setSize(0);
-                        downloadInfo.setDownloaded((Long.parseLong(downloadInfo.formatFileSize(-1))));
-                        downloadInfo.setTransferRate(0);
-                        downloadInfo.setTimeleft(0);
-                        downloadThreads.forEach(DownloadThread::cancel);
-                        if (!executorService.isShutdown()) {
-                            executorService.shutdownNow();
-                        }
-                        Platform.runLater(() -> {
-                            progressBarList.forEach(progressBar -> progressBar.setProgress(0));
-                        });
-
-                        tableView.getItems().clear();
-
-                        break;
-                    } else if (shClick.get()) {
-                        containerPane.requestLayout();
-                        if (hide.get() && !show.get()) {
-                            Platform.runLater(() -> {
-                                tableView.setVisible(false);
-                                BtShowHide.setText("Show Details");
-                                containerPane.setPrefHeight(700.0);
-                                progressBarList.forEach(progressBar -> progressBar.setVisible(false));
-                                shClick.set(false);//quan trong
-                            });
-
-                        }
-
-                        if (!hide.get() && show.get()) {
-                            Platform.runLater(() -> {
-                                tableView.setVisible(true);
-                                BtShowHide.setText("Hide Details");
-                                containerPane.setPrefHeight(374.0);
-                                progressBarList.forEach(progressBar -> progressBar.setVisible(true));
-                                shClick.set(false);//quan trong
-                            });
-
-                        }
-
-                    } else if (paused.get()) {
-                        downloadThreads.forEach(DownloadThread::pause);
-                        downloadInfo.setStatus("Paused");
-                        for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
-                            downloadInfoChunk.setInfo("Paused"); // hoặc bất kỳ thông tin nào khác bạn muốn set
-                        }
-                    } else if (!paused.get()) {
-                        downloadThreads.forEach(DownloadThread::resume);
-                        downloadInfo.setStatus("Received data");
-                        for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
-                            downloadInfoChunk.setInfo("Received data"); // hoặc bất kỳ thông tin nào khác bạn muốn set
-                        }
                     }
                 }
-
             } catch (IOException e) {
                 System.err.println("Error downloading file: " + e);
                 Files.delete(tempDir);
@@ -274,19 +250,30 @@ public class DownloadManager {
         show.set(true);
     }
 
-    // Phương thức cập nhật tổng cột Downloaded
+    private static String getFilename(String filename, int duplicateCounter) {
+        String newFilename;
+        int dotIndex = filename.lastIndexOf(".");
+        if (dotIndex != -1) {
+            String baseName = filename.substring(0, dotIndex);
+            String extension = filename.substring(dotIndex);
+            newFilename = baseName + "(" + duplicateCounter + ")" + extension;
+        } else {
+            newFilename = filename + "(" + duplicateCounter + ")";
+        }
+        return newFilename;
+    }
+
     private void updateTotalDownloaded(String newValue, String oldValue) {
         long totalDownloaded = 0;
         try {
-            if (oldValue == "0") {
+            if (oldValue.equals("0")) {
                 return;
             }
-            totalDownloaded = downloadInfo.formatFileSizeToLong(newValue) - downloadInfo.formatFileSizeToLong(oldValue);
-            //KB
+            totalDownloaded = downloadInfo.formatFileSizeKBToLong(newValue) - downloadInfo.formatFileSizeKBToLong(oldValue);
+            //KB ko chua phan thap phan
             this.downloadedSize += totalDownloaded;
             // Bytes
             this.downloadInfo.setDownloaded(this.downloadedSize * 1024);
-            //this.txtDownload.setText(this.downloadInfo.toString());
         } catch (NumberFormatException e) {
             System.out.println("check error: " + e.getMessage());
         }

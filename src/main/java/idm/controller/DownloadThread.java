@@ -11,12 +11,12 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DownloadThread implements Runnable {
-    private String url;
-    private long startByte;
-    private long endByte;
-    private Path tempDownloadingFile;
-    private ProgressBar progressBar;
-    private DownloadInfoOneChunk downloadInfoOneChunk;
+    private final String url;
+    private final long startByte;
+    private final long endByte;
+    private final Path tempDownloadingFile;
+    private final ProgressBar progressBar;
+    private final DownloadInfoOneChunk downloadInfoOneChunk;
     private final AtomicBoolean paused;
     private final AtomicBoolean cancelled;
 
@@ -29,23 +29,25 @@ public class DownloadThread implements Runnable {
         this.tempDownloadingFile = tempDownloadingFile;
         this.progressBar = progressBar;
         this.downloadInfoOneChunk = downloadInfoOneChunk;
-        this.paused = new AtomicBoolean(false); // Khởi tạo AtomicBoolean
-        this.cancelled = new AtomicBoolean(false); // Khởi tạo AtomicBoolean
+        this.paused = new AtomicBoolean(false);
+        this.cancelled = new AtomicBoolean(false);
     }
+
     public void pause() {
         paused.set(true);
     }
+
     public void resume() {
         synchronized (pauseLock) {
             paused.set(false);
             pauseLock.notifyAll(); // Thức tỉnh tất cả các luồng đã bị tạm dừng
         }
     }
+
     public void cancel() {
         // Gọi từ bên ngoài để huỷ luồng tải
         cancelled.set(true);
     }
-
 
     @Override
     public void run() {
@@ -63,22 +65,23 @@ public class DownloadThread implements Runnable {
                 int countN = 1;
                 boolean isSetInfor = false;
                 while ((bytesRead = in.read(buffer)) != -1) {
-                	synchronized (pauseLock) {
-                        while(paused.get()) {
+                    synchronized (pauseLock) {
+                        while (paused.get()) {
                             // Nếu đang paused, tạm dừng luồng và chờ cho đến khi được thức tỉnh
                             try {
-								pauseLock.wait();
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+                                pauseLock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
-                    }if (cancelled.get()) {
+                    }
+                    if (cancelled.get()) {
                         return;
                     }
                     out.write(buffer, 0, bytesRead);
                     totalBytesRead += bytesRead;
-                    if(totalBytesOneChunk == totalBytesRead) isSetInfor = true;
+                    if (Math.abs(totalBytesRead - totalBytesOneChunk) < 1e-3)
+                        isSetInfor = true;
                     updateProgress(totalBytesRead, totalBytesOneChunk, isSetInfor);
                 }
             } catch (IOException e1) {
@@ -88,21 +91,21 @@ public class DownloadThread implements Runnable {
             e.printStackTrace();
         }
     }
-    
+
     private void updateProgress(long workDone, long max, boolean isSetInfor) {
         if (Platform.isFxApplicationThread()) {
             if (!paused.get()) {
                 progressBar.setProgress((double) workDone / max);
-                downloadInfoOneChunk.setDownloaded(downloadInfoOneChunk.formatFileSize(workDone));
+                downloadInfoOneChunk.setDownloaded(downloadInfoOneChunk.formatFileSizeToByte(workDone));
                 if (isSetInfor) {
                     downloadInfoOneChunk.setInfo("Received data successfully");
                 }
-            } 
+            }
         } else {
             Platform.runLater(() -> {
                 if (!paused.get()) {
                     progressBar.setProgress((double) workDone / max);
-                    downloadInfoOneChunk.setDownloaded(downloadInfoOneChunk.formatFileSize(workDone));
+                    downloadInfoOneChunk.setDownloaded(downloadInfoOneChunk.formatFileSizeToByte(workDone));
                 }
                 if (isSetInfor) {
                     downloadInfoOneChunk.setInfo("Received data successfully");
@@ -110,5 +113,4 @@ public class DownloadThread implements Runnable {
             });
         }
     }
-
 }

@@ -10,7 +10,7 @@ public class DownloadInfo {
     private long size;
     private long downloaded;
     private double transferRate;
-    private double timeleft;
+    private double timeLeft;
 
     public DownloadInfo(String url, String fileName, String path, String status, long size, long downloaded, double transferRate) {
         this.url = url;
@@ -20,7 +20,7 @@ public class DownloadInfo {
         this.size = size;
         this.downloaded = downloaded;
         this.transferRate = transferRate;
-        this.timeleft = (size - downloaded)/transferRate;
+        this.timeLeft = (size - downloaded) / transferRate;
     }
 
     public String getUrl() {
@@ -80,31 +80,33 @@ public class DownloadInfo {
     }
 
     public double getTimeleft() {
-        return timeleft;
+        return timeLeft;
     }
 
-    public void setTimeleft(double timeleft) {
-        this.timeleft = timeleft;
+    public void setTimeLeft(double timeLeft) {
+        this.timeLeft = timeLeft;
     }
-    public String formatFileSize(long size) {
+    public String formatFileSizeToByte(long size) {
         if (size <= 0) return "0";
         final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
-        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-        return String.format("%s %s", new DecimalFormat("#,##0.#").format(size / 1024), units[2]);
+        return String.format("%s %s", new DecimalFormat("#,##0.###").format(size / (1024.0*1024.0)), units[2]);
     }
-    public long formatFileSizeToLong(String value) {
-        String downloaded = value.replace(",", "");
+    public long formatFileSizeKBToLong(String value) {
+        // KB -> long
+        String downloaded = value.replace(".", "");
+        downloaded = downloaded.replace(",", "");
         String result = downloaded.substring(0, downloaded.length() - 3).replace(" ", "");
         return Long.parseLong(result);
     }
     @Override
     public String toString() {
-        String infor = url + "\n"
-                 + "Status              " + status + "\n"
-                 + "File size           " + formatFileSize(size) + "\n"
-                 + "Downloaded          " + formatFileSize(downloaded) + "\n"
+        double rate = downloaded * 100.0 / size;
+        String Rate = " (" + String.format("%.2f", rate) + " %)";
+        return url + "\n"
+                 + "Status              " + status + "\n\n"
+                 + "File size           " + formatFileSizeToByte(size) + "\n"
+                 + "Downloaded          " + formatFileSizeToByte(downloaded) + Rate + "\n"
                  + "Transfer rate       " + String.format("%.3f", transferRate) + " MB/sec" + "\n"
-                 + "Time left           " + String.format("%.0f", timeleft) + " sec";
-        return infor;
+                 + "Time left           " + String.format("%.0f", timeLeft) + " sec";
     }
 }

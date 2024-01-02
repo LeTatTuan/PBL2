@@ -1,21 +1,24 @@
+README
 java, intellij, scene builder
 groupId: org.openjfx
 artifactId: javafx-archetype-fxml
 
 
+
+                        File download
 https://nodejs.org/dist/v16.13.1/node-v16.13.1-x64.msi
 https://www.python.org/ftp/python/3.11.6/python-3.11.6-embed-amd64.zip
 https://download-cdn.jetbrains.com/python/pycharm-community-2023.2.2.exe
 https://nodejs.org/dist/v18.18.0/node-v18.18.0-x64.msi
 https://download-cdn.jetbrains.com/rider/JetBrains.Rider-2023.2.3.exe
 https://download-cdn.jetbrains.com/idea/ideaIU-2023.2.5.exe
-
-D:\University\ThreeYear\semester5\PBL4\Downloads
-
-C:\Users\ASUS\AppData\Local\Temp\mytempdir_7141087136047787208
-
-"/Users/ahnchoww/Documents/Test"
+https://software.download.prss.microsoft.com/dbazure/Win8.1_SingleLang_English_x64.iso?t=9b62c362-e078-426c-b0df-48b132d482a0&e=1704265467&h=52aa301991c923de0b147515f86f8a61a743b39305e2498b21cac0daf06d7b3e
+https://software.download.prss.microsoft.com/dbazure/Win11_23H2_English_x64v2.iso?t=5d7a7100-6dac-42ba-b805-de2513dfb42c&e=1704265579&h=296e1465e536a33613844c8c57f604e94edc0b79c0a3381e11f2445bf810e1fe
 
 "https://phanmem123-my.sharepoint.com/personal/data_phanmem123_onmicrosoft_com/_layouts/15/download.aspx?SourceUrl=%2Fpersonal%2Fdata%5Fphanmem123%5Fonmicrosoft%5Fcom%2FDocuments%2F%5BPhanmem123%2Ecom%5D%20MATLAB%20R2019a%2Erar";
-"https:\u002f\u002fphanmem123-my.sharepoint.com:443\u002f_api\u002fv2.0\u002fdrives\u002fb!ADH3KsGuqE6pSbGoXMdl54Q7HEa6h89Ho2ou4HX4OIltIwSfuv8CTpMrWmp0ayh3\u002fitems\u002f01YYJER2G27EP7IQ7AXNCJUIASXTUJSR2I?version=Published",
 
+
+                         Folder Download
+Tuan -> D:\University\ThreeYear\semester5\PBL4\Downloads
+Chau -> /Users/ahnchoww/Documents/Test
+Huy  -> D:\\Uni Procedure\\Nam3\\Downloads
