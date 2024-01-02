@@ -65,9 +65,11 @@ public class DownloadManager {
     private volatile AtomicBoolean show = new AtomicBoolean(true);
     List<DownloadThread> downloadThreads = new ArrayList<>();
     ExecutorService executorService = Executors.newCachedThreadPool();
+    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @FXML
     void downloadButtonClicked() {
+        cancelled.set(false);
         try {
             String url = this.urlTextField.getText().trim();
             //String filename = url.substring(url.lastIndexOf("/") + 1);
@@ -119,10 +121,12 @@ public class DownloadManager {
     void cancelButtonClicked() {
         cancelled.set(true);
         downloadInfo.setStatus("Cancelled");
-        downloadInfo.setSize(0);
-        downloadInfo.setDownloaded((Long.parseLong(downloadInfo.formatFileSizeToByte(-1))));
+        downloadInfo.setDownloaded(0);
         downloadInfo.setTransferRate(0);
         downloadInfo.setTimeLeft(0);
+        txtDownload.setText(downloadInfo.toString());
+        scheduler.shutdown();
+        totalProgressBar.setProgress(0.0);
         downloadThreads.forEach(DownloadThread::cancel);
         if (!executorService.isShutdown()) {
             executorService.shutdownNow();
@@ -130,8 +134,6 @@ public class DownloadManager {
         Platform.runLater(() -> {
             progressBarList.forEach(progressBar -> progressBar.setProgress(0));
         });
-        totalProgressBar.setProgress(0.0);
-        tableView.getItems().clear();
     }
 
     @FXML
@@ -157,6 +159,10 @@ public class DownloadManager {
                 });
             }
         }
+        if (hide.get()) {
+            progressBarList.forEach(progressBar -> progressBar.setVisible(true));
+            tableView.setVisible(true);
+        }
     }
 
 
@@ -165,7 +171,7 @@ public class DownloadManager {
             for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
                 downloadInfoChunk.setInfo("Receiving data...");
             }
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+            scheduler = Executors.newScheduledThreadPool(1);
             long downloadedBefore1s = 0;
             UpdateUIEverySecond updateIntefaceEvery1s = new UpdateUIEverySecond(downloadInfo, downloadedBefore1s, paused, cancelled);
             // Lên lịch gọi hàm sau mỗi 1 giây
@@ -215,19 +221,18 @@ public class DownloadManager {
                             }
                         }
                         Files.delete(tempDir);
-                        System.out.println("File downloaded successfully.");
-                        for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
-                            downloadInfoChunk.setInfo("Received data successfully");
+                        if (!cancelled.get()) {
+                            System.out.println("File downloaded successfully.");
+                            for (DownloadInfoOneChunk downloadInfoChunk : downloadInfoList) {
+                                downloadInfoChunk.setInfo("Received data successfully");
+                            }
+                            downloadInfo.setStatus("Received data");
+                            downloadInfo.setDownloaded(contentLength);
+                            downloadInfo.setTimeLeft(0.0);
+                            this.txtDownload.setText(downloadInfo.toString());
+                            totalProgressBar.setProgress(1);
+                            scheduler.shutdown();
                         }
-                        cancelled.set(false);
-                        downloadInfo.setStatus("Received data");
-                        downloadInfo.setDownloaded(downloadInfo.getSize());
-                        downloadInfo.setTimeLeft(0.0);
-                        this.txtDownload.setText(downloadInfo.toString());
-                        Platform.runLater(() -> {
-                            this.totalProgressBar.setProgress(1);
-                        });
-                        scheduler.shutdown();
                         break;
                     }
                 }
@@ -240,10 +245,7 @@ public class DownloadManager {
             System.err.println("Error downloading file: " + e.getMessage());
             downloadInfo.setStatus("FAILED");
         }
-        if (hide.get()) {
-            progressBarList.forEach(progressBar -> progressBar.setVisible(true));
-            tableView.setVisible(true);
-        }
+        cancelled.set(false);
         paused.set(false);
         shClick.set(false);
         hide.set(false);
@@ -297,7 +299,6 @@ public class DownloadManager {
         for (int i = 0; i < 8; i++) {
             downloadInfoList.add(new DownloadInfoOneChunk(Integer.toString(i + 1), "0", "Receiving data..."));
         }
-        System.out.println("View initialized");
 
         //set column N.
         TableColumn<DownloadInfoOneChunk, String> sn = (TableColumn<DownloadInfoOneChunk, String>) this.tableView.getColumns().get(0);
